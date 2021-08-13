@@ -225,3 +225,36 @@ endif()
 if(NOT SKIP_INSTALL_FILES AND NOT SKIP_INSTALL_ALL )
     install(FILES ${ZLIB_PC} DESTINATION "${INSTALL_PKGCONFIG_DIR}")
 endif()
+
+
+if (APPLE)
+
+  if (CMAKE_GENERATOR STREQUAL "Xcode")
+    #iOS
+    set(CMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT "dwarf-with-dsym")
+    set(CMAKE_XCODE_ATTRIBUTE_DEBUG_INFORMATION_FORMAT[variant=Release] "dwarf-with-dsym")
+    set(CMAKE_XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS YES)
+    set(CMAKE_XCODE_ATTRIBUTE_GCC_GENERATE_DEBUGGING_SYMBOLS[variant=Release] YES)
+    add_compile_options(-g)
+  else()
+    find_program(DSYMUTIL dsymutil)
+    if (NOT DSYMUTIL)
+        MESSAGE(FATAL_ERROR(“Cannot find dsymutil”))
+    endif()
+
+    set_target_properties(zlib PROPERTIES
+        COMPILE_FLAGS -g
+    )
+
+    add_custom_command(TARGET zlib POST_BUILD
+        COMMAND ${DSYMUTIL} $<TARGET_FILE:zlib> -o $<TARGET_FILE:zlib>.dSYM
+    )
+
+  endif()
+
+  install(
+    FILES $<TARGET_FILE:zlib>.dSYM
+    DESTINATION ${INSTALL_LIB_DIR}
+  )
+
+endif()
